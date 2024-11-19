@@ -1,45 +1,56 @@
 CREATE DATABASE IF NOT EXISTS control;
 USE control;
 
-CREATE TABLE IF NOT EXISTS data_files (
-	id INT PRIMARY KEY AUTO_INCREMENT,
-	data_file_config_id INT NOT NULL,
-	file_name VARCHAR(200) NOT NULL,
-	stored_dir VARCHAR(255),
-	num_of_file_row INT,
-	date_record TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-	`status` VARCHAR(20)
+CREATE TABLE logs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    df_config_id INT NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    row_count INT,
+    status VARCHAR(50) NOT NULL,
+    note VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_by VARCHAR(50) NOT NULL
 );
 
 
+use control;
+DROP TABLE IF EXISTS data_file_configs;
+
+-- Create table to store configuration settings for data files
 CREATE TABLE IF NOT EXISTS data_file_configs (
-	id INT PRIMARY KEY AUTO_INCREMENT,
-	description TEXT,
-	file_name_format VARCHAR(1000),  			 -- source file name
-	`code` VARCHAR(20) UNIQUE,			 -- code of file, e.g. crawl.html (file crawl HTML), crawl.data (file data extract from HTML)
-	location VARCHAR(1000),          -- Location of the file (e.g., folder or system location)
-	format VARCHAR(255),             -- File format (e.g., "csv", "txt")
-	`separator` VARCHAR(255),        -- Field separator (e.g., ",", ";")
-	`columns` TEXT,                  -- Columns in the file (e.g., "product_name,image_url,...")
-	destination VARCHAR(1000),       -- Destination table (e.g., "staging.cp_daily")
-	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,  -- Creation timestamp
-	updated_at TIMESTAMP DEFAULT NULL,                      -- Update timestamp
-	created_by VARCHAR(255),                        -- User who created the entry
-	updated_by VARCHAR(255) DEFAULT NULL                    -- User who last updated the entry
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    description TEXT,
+    file_name VARCHAR(1000),       -- source file name
+    location VARCHAR(1000),          -- Location of the file (e.g., folder or system location)
+    format VARCHAR(255),             -- File format (e.g., "csv", "txt")
+    `separator` VARCHAR(255),        -- Field separator (e.g., ",", ";")
+    `columns` TEXT,                  -- Columns in the file (e.g., "product_name,image_url,...")
+    destination VARCHAR(1000),       -- Destination table (e.g., "staging.cp_daily")
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,  -- Creation timestamp
+    updated_at TIMESTAMP NULL,                      -- Update timestamp
+    created_by VARCHAR(255),                        -- User who created the entry
+    updated_by VARCHAR(255)                         -- User who last updated the entry
 );
 
-ALTER TABLE data_files
-ADD CONSTRAINT fk_data_file_config_id
-FOREIGN KEY (data_file_config_id) REFERENCES data_file_configs(id)
-ON DELETE CASCADE
-ON UPDATE CASCADE;
-
-
--- HTML CSV File
-INSERT INTO data_file_configs (description, file_name_format, `code`, location, format, `separator`, `columns`, destination, created_by) 
-VALUES ('Configuration for daily crawl HTML file', 'cp_daily_html_dd.MM.yyyy', 'crawl.html', 'D:\\DW\\html', 'csv', ',', 'nameHtml,imgHtml,infoHtml,priceHtml', NULL, 'Pham Minh Dung');
-
--- Data CSV File
-INSERT INTO data_file_configs (description, file_name_format, `code`, location, format, `separator`, `columns`, destination, created_by) 
-VALUES ('Configuration for daily crawl data file', 'cp_daily_data_dd.MM.yyyy', 'crawl.data', 'D:\\DW\\data', 'csv', ',', 'id,product_name,image_url,size,weight,resolution,sensor,buttons,connection,battery,compatibility,utility,manufacturer,price', 
-NULL, 'Pham Minh Dung');
+-- Insert configuration settings into data_file_configs for the cp_daily CSV file
+INSERT INTO data_file_configs (
+    description,
+    file_name,
+    location,
+    format,
+    `separator`,
+    `columns`,
+    destination,
+    created_at,
+    created_by
+) VALUES (
+    'Configuration for loading cp_daily CSV data',
+    'cp_daily',
+    'C:/ProgramData/MySQL/MySQL Server 8.2/Uploads',
+    'csv',
+    ';',
+    'product_name, image_url, dimensions, weight, resolution, sensor, buttons, connection, battery, compatibility, utility, manufacturer, price',
+    'staging.cp_daily',
+    CURRENT_TIMESTAMP,
+    'admin'
+);
