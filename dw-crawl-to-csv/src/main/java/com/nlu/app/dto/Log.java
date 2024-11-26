@@ -11,7 +11,7 @@ import java.sql.Timestamp;
 @Getter
 @Setter
 @NoArgsConstructor
-public class DataFile {
+public class Log {
     @ColumnName("id")
     private int id;
 
@@ -34,13 +34,13 @@ public class DataFile {
     private String status;
 
     @JdbiConstructor
-    public DataFile(@ColumnName("id") int id,
-                    @ColumnName("data_file_config_id") int dataFileConfigId,
-                    @ColumnName("file_name") String fileName,
-                    @ColumnName("stored_dir") String storedDir,
-                    @ColumnName("num_of_file_row") Integer numOfFileRow,
-                    @ColumnName("date_record") Timestamp dateRecord,
-                    @ColumnName("status") String status) {
+    public Log(@ColumnName("id") int id,
+               @ColumnName("data_file_config_id") int dataFileConfigId,
+               @ColumnName("file_name") String fileName,
+               @ColumnName("stored_dir") String storedDir,
+               @ColumnName("num_of_file_row") Integer numOfFileRow,
+               @ColumnName("date_record") Timestamp dateRecord,
+               @ColumnName("status") String status) {
         this.id = id;
         this.dataFileConfigId = dataFileConfigId;
         this.fileName = fileName;

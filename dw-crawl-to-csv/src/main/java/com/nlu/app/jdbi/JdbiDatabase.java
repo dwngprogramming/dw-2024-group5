@@ -1,6 +1,6 @@
 package com.nlu.app.jdbi;
 
-import com.nlu.app.dto.DataFile;
+import com.nlu.app.dto.Log;
 import com.nlu.app.dto.DataFileConfig;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
@@ -49,11 +49,11 @@ public class JdbiDatabase {
     }
 
     // Ghi lại log vào table data_files. Trả về id của log vừa lưu
-    public int logCrawlFile(DataFile dataFile) {
+    public int logCrawlFile(Log log) {
         return controlJdbi.withHandle(handle ->
                 handle.createUpdate("INSERT INTO control.logs (data_file_config_id, file_name, stored_dir, num_of_file_row, date_record, status) " +
                                 "VALUES (:dataFileConfigId, :fileName, :storedDir, :numOfFileRow, :dateRecord, :status)")
-                        .bindBean(dataFile)  // bind toàn bộ đối tượng DataFile
+                        .bindBean(log)  // bind toàn bộ đối tượng DataFile
                         .executeAndReturnGeneratedKeys("id")  // Trả về id mới được tạo
                         .mapTo(int.class)  // ánh xạ kết quả thành kiểu int
                         .one()  // lấy giá trị duy nhất
@@ -61,13 +61,13 @@ public class JdbiDatabase {
     }
 
     // Hàm lấy ra thông tin về log dựa trên id log (record trong table data_files)
-    public DataFile getDataFileById(int dataFileId) {
+    public Log getDataFileById(int dataFileId) {
         return controlJdbi.withHandle(handle ->
                 handle
-                        .registerRowMapper(DataFile.class, ConstructorMapper.of(DataFile.class))
+                        .registerRowMapper(Log.class, ConstructorMapper.of(Log.class))
                         .createQuery("SELECT * FROM control.logs WHERE id = :dataFileId")
                         .bind("dataFileId", dataFileId)
-                        .mapTo(DataFile.class)
+                        .mapTo(Log.class)
                         .findOne()
                         .orElse(null)
         );

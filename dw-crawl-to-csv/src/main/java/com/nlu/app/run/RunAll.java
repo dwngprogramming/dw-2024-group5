@@ -1,6 +1,6 @@
 package com.nlu.app.run;
 
-import com.nlu.app.dto.DataFile;
+import com.nlu.app.dto.Log;
 import com.nlu.app.dto.DataFileConfig;
 import com.nlu.app.service.CsvService;
 import com.nlu.app.service.DatabaseService;
@@ -58,20 +58,20 @@ public class RunAll {
             System.out.println("Crawling data file right now. This will take a few minutes...");
             int recordDataCount = csvService.csvHtmlToCsvData(htmlCsvPath, dataCsvPath);
             if (recordDataCount > 0) {
-                DataFile dataFile = new DataFile();
-                dataFile.setDataFileConfigId(2);
-                dataFile.setFileName(dataCsvName);
-                dataFile.setStoredDir(dataCsvPath);
-                dataFile.setNumOfFileRow(recordDataCount);
-                dataFile.setStatus(StatusType.PENDING_TO_SAVE_TEMP);
+                Log log = new Log();
+                log.setDataFileConfigId(2);
+                log.setFileName(dataCsvName);
+                log.setStoredDir(dataCsvPath);
+                log.setNumOfFileRow(recordDataCount);
+                log.setStatus(StatusType.PENDING_TO_SAVE_TEMP);
 
-                DataFile logDataFile = databaseService.logCrawlFile(dataFile);
+                Log logLog = databaseService.logCrawlFile(log);
                 System.out.println("Crawl data CSV file success. Check file in + .");
                 System.out.println("Log file infomation: ");
-                System.out.println("File name: " + logDataFile.getFileName());
-                System.out.println("Stored dir: " + logDataFile.getStoredDir());
-                System.out.println("Number of row: " + logDataFile.getNumOfFileRow());
-                System.out.println("Status: " + logDataFile.getStatus());
+                System.out.println("File name: " + logLog.getFileName());
+                System.out.println("Stored dir: " + logLog.getStoredDir());
+                System.out.println("Number of row: " + logLog.getNumOfFileRow());
+                System.out.println("Status: " + logLog.getStatus());
                 System.out.println("Exited program...");
             } else {
                 System.out.println("Crawl data CSV file failed. Exited program...");
