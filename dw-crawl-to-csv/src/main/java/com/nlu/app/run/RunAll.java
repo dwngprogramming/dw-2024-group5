@@ -65,13 +65,13 @@ public class RunAll {
                 log.setNumOfFileRow(recordDataCount);
                 log.setStatus(StatusType.PENDING_TO_SAVE_TEMP);
 
-                Log logLog = databaseService.logCrawlFile(log);
+                Log afterLog = databaseService.logCrawlFile(log);
                 System.out.println("Crawl data CSV file success. Check file in + .");
                 System.out.println("Log file infomation: ");
-                System.out.println("File name: " + logLog.getFileName());
-                System.out.println("Stored dir: " + logLog.getStoredDir());
-                System.out.println("Number of row: " + logLog.getNumOfFileRow());
-                System.out.println("Status: " + logLog.getStatus());
+                System.out.println("File name: " + afterLog.getFileName());
+                System.out.println("Stored dir: " + afterLog.getStoredDir());
+                System.out.println("Number of row: " + afterLog.getNumOfFileRow());
+                System.out.println("Status: " + afterLog.getStatus());
                 System.out.println("Exited program...");
             } else {
                 System.out.println("Crawl data CSV file failed. Exited program...");
