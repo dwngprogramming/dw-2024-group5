@@ -27,7 +27,7 @@ public class JdbiDatabase {
     // Hàm lấy id của file log, trả về id nếu đã crawl, -1 nếu chưa crawl
     public int getFileCrawlToday(LocalDate date) {
         return controlJdbi.withHandle(handle ->
-                handle.createQuery("SELECT id FROM control.data_files WHERE DATE(date_record) = :date")
+                handle.createQuery("SELECT id FROM control.logs WHERE DATE(date_record) = :date")
                         .bind("date", date)
                         .mapTo(Integer.class)
                         .findOne()
@@ -51,7 +51,7 @@ public class JdbiDatabase {
     // Ghi lại log vào table data_files. Trả về id của log vừa lưu
     public int logCrawlFile(DataFile dataFile) {
         return controlJdbi.withHandle(handle ->
-                handle.createUpdate("INSERT INTO control.data_files (data_file_config_id, file_name, stored_dir, num_of_file_row, date_record, status) " +
+                handle.createUpdate("INSERT INTO control.logs (data_file_config_id, file_name, stored_dir, num_of_file_row, date_record, status) " +
                                 "VALUES (:dataFileConfigId, :fileName, :storedDir, :numOfFileRow, :dateRecord, :status)")
                         .bindBean(dataFile)  // bind toàn bộ đối tượng DataFile
                         .executeAndReturnGeneratedKeys("id")  // Trả về id mới được tạo
@@ -65,7 +65,7 @@ public class JdbiDatabase {
         return controlJdbi.withHandle(handle ->
                 handle
                         .registerRowMapper(DataFile.class, ConstructorMapper.of(DataFile.class))
-                        .createQuery("SELECT * FROM control.data_files WHERE id = :dataFileId")
+                        .createQuery("SELECT * FROM control.logs WHERE id = :dataFileId")
                         .bind("dataFileId", dataFileId)
                         .mapTo(DataFile.class)
                         .findOne()
