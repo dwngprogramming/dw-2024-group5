@@ -63,7 +63,7 @@ public class RunAll {
                 dataFile.setFileName(dataCsvName);
                 dataFile.setStoredDir(dataCsvPath);
                 dataFile.setNumOfFileRow(recordDataCount);
-                dataFile.setStatus(StatusType.CRAWLED_SUCCESS);
+                dataFile.setStatus(StatusType.PENDING_TO_SAVE_TEMP);
 
                 DataFile logDataFile = databaseService.logCrawlFile(dataFile);
                 System.out.println("Crawl data CSV file success. Check file in + .");
