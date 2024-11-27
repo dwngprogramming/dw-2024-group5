@@ -1,6 +1,6 @@
 package com.nlu.app.service;
 
-import com.nlu.app.dto.DataFile;
+import com.nlu.app.dto.Log;
 import com.nlu.app.dto.DataFileConfig;
 import com.nlu.app.jdbi.JdbiDatabase;
 
@@ -17,8 +17,8 @@ public class DatabaseService {
         return this.jdbiDatabase.getDataFileConfig(code);
     }
 
-    public DataFile logCrawlFile(DataFile dataFile) {
-        int recentLogId = this.jdbiDatabase.logCrawlFile(dataFile);
+    public Log logCrawlFile(Log log) {
+        int recentLogId = this.jdbiDatabase.logCrawlFile(log);
         return this.jdbiDatabase.getDataFileById(recentLogId);
     }
 }

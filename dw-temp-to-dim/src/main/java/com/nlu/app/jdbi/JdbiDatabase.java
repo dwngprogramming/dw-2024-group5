@@ -1,13 +1,12 @@
 package com.nlu.app.jdbi;
 
-import com.nlu.app.dto.Log;
+import com.nlu.app.dto.DataFile;
 import com.nlu.app.dto.DataFileConfig;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import org.jdbi.v3.core.Jdbi;
 import org.jdbi.v3.core.mapper.reflect.ConstructorMapper;
 
-import java.time.LocalDate;
 import java.util.ResourceBundle;
 
 public class JdbiDatabase {
@@ -24,11 +23,12 @@ public class JdbiDatabase {
         this.stagingJdbi = this.getStaging();
     }
 
-    // Hàm lấy id của file log, trả về id nếu đã crawl, -1 nếu chưa crawl
-    public int getFileCrawlToday(LocalDate date) {
+    // Hàm lấy ra id của file log dựa trên tên file & trạng thái
+    public int getInLog(String fileName, String status) {
         return controlJdbi.withHandle(handle ->
-                handle.createQuery("SELECT id FROM control.logs WHERE DATE(date_record) = :date")
-                        .bind("date", date)
+                handle.createQuery("SELECT id FROM control.data_files WHERE file_name = :fileName AND status = :status")
+                        .bind("fileName", fileName)
+                        .bind("status", status)
                         .mapTo(Integer.class)
                         .findOne()
                         .orElse(-1) // Trả về kết quả của orElse
@@ -49,11 +49,11 @@ public class JdbiDatabase {
     }
 
     // Ghi lại log vào table data_files. Trả về id của log vừa lưu
-    public int logCrawlFile(Log log) {
+    public int logCrawlFile(DataFile dataFile) {
         return controlJdbi.withHandle(handle ->
-                handle.createUpdate("INSERT INTO control.logs (data_file_config_id, file_name, stored_dir, num_of_file_row, date_record, status) " +
+                handle.createUpdate("INSERT INTO control.data_files (data_file_config_id, file_name, stored_dir, num_of_file_row, date_record, status) " +
                                 "VALUES (:dataFileConfigId, :fileName, :storedDir, :numOfFileRow, :dateRecord, :status)")
-                        .bindBean(log)  // bind toàn bộ đối tượng DataFile
+                        .bindBean(dataFile)  // bind toàn bộ đối tượng DataFile
                         .executeAndReturnGeneratedKeys("id")  // Trả về id mới được tạo
                         .mapTo(int.class)  // ánh xạ kết quả thành kiểu int
                         .one()  // lấy giá trị duy nhất
@@ -61,13 +61,13 @@ public class JdbiDatabase {
     }
 
     // Hàm lấy ra thông tin về log dựa trên id log (record trong table data_files)
-    public Log getDataFileById(int dataFileId) {
+    public DataFile getDataFileById(int dataFileId) {
         return controlJdbi.withHandle(handle ->
                 handle
-                        .registerRowMapper(Log.class, ConstructorMapper.of(Log.class))
-                        .createQuery("SELECT * FROM control.logs WHERE id = :dataFileId")
+                        .registerRowMapper(DataFile.class, ConstructorMapper.of(DataFile.class))
+                        .createQuery("SELECT * FROM control.data_files WHERE id = :dataFileId")
                         .bind("dataFileId", dataFileId)
-                        .mapTo(Log.class)
+                        .mapTo(DataFile.class)
                         .findOne()
                         .orElse(null)
         );

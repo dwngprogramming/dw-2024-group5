@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.nlu.app</groupId>
-    <artifactId>dw-crawl-to-csv</artifactId>
+    <artifactId>dw-temp-to-dim</artifactId>
     <version>1.1</version>
 
     <dependencies>
@@ -112,7 +112,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>com.nlu.app.run.RunAll</mainClass>
+                            <mainClass>com.nlu.app.run.RunTempToDim</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
