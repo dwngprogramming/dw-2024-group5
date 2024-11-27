@@ -12,7 +12,7 @@ public class DatabaseService {
     public final JdbiDatabase jdbiDatabase = new JdbiDatabase();
 
     public boolean isCrawled(String fileName) {
-        return this.jdbiDatabase.getInLog(fileName, StatusType.CRAWLED_SUCCESS) > 0;
+        return this.jdbiDatabase.getInLog(fileName, StatusType.PENDING_TO_SAVE_TEMP) > 0;
     }
 
     public DataFileConfig getDataFileConfig(String code) {
@@ -31,7 +31,8 @@ public class DatabaseService {
         return this.jdbiDatabase.getDataFileById(recentLogId);
     }
 
+    // Nếu đang chờ clean data -> Đã lưu dữ liệu từ file vào cp_daily rồi
     public boolean isSavedToTemp(String fileNameToday) {
-        return this.jdbiDatabase.getInLog(fileNameToday, StatusType.CRAWLED_SUCCESS) > 0;
+        return this.jdbiDatabase.getInLog(fileNameToday, StatusType.PENDING_TO_CLEAN_DATA) > 0;
     }
 }

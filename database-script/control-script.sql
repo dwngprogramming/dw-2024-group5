@@ -1,14 +1,14 @@
 CREATE DATABASE IF NOT EXISTS control;
 USE control;
 
-CREATE TABLE IF NOT EXISTS data_files (
+CREATE TABLE IF NOT EXISTS `logs` (
 	id INT PRIMARY KEY AUTO_INCREMENT,
 	data_file_config_id INT NOT NULL,
 	file_name VARCHAR(200) NOT NULL,
 	stored_dir VARCHAR(255),
 	num_of_file_row INT,
 	date_record TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-	`status` VARCHAR(20)
+	`status` VARCHAR(50)
 );
 
 
@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS data_file_configs (
 	updated_by VARCHAR(255) DEFAULT NULL                    -- User who last updated the entry
 );
 
-ALTER TABLE data_files
+ALTER TABLE `logs`
 ADD CONSTRAINT fk_data_file_config_id
 FOREIGN KEY (data_file_config_id) REFERENCES data_file_configs(id)
 ON DELETE CASCADE
