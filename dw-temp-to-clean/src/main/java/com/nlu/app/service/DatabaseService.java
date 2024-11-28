@@ -6,7 +6,10 @@ import com.nlu.app.status.StatusType;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.ResourceBundle;
 import java.util.stream.Collectors;
 
 public class DatabaseService {
@@ -48,10 +51,14 @@ public class DatabaseService {
     }
 
     public boolean callDataCleaningProcedure() {
-        return jdbiDatabase.callDataCleaningProcedure() > 0;
+        return jdbiDatabase.callDataCleaningProcedure() >= 0;
     }
 
-    public boolean createLogStatus(String fileName, String status) {
-        return jdbiDatabase.createLogStatus(fileName, status) > 0;
+    public boolean createLogStatus(String fileName, String storedDir, String status) {
+        return jdbiDatabase.createLogStatus(fileName, storedDir, status) > 0;
+    }
+
+    public String getStoredDirFromStatus(String fileName, String status) {
+        return this.jdbiDatabase.getStoredDir(fileName, status);
     }
 }

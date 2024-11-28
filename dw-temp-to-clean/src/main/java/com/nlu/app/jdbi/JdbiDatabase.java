@@ -3,7 +3,6 @@ package com.nlu.app.jdbi;
 import com.nlu.app.dto.DataFileConfig;
 import com.nlu.app.dto.FileStatus;
 import com.nlu.app.dto.Log;
-import com.nlu.app.status.StatusType;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import org.jdbi.v3.core.Jdbi;
@@ -77,10 +76,11 @@ public class JdbiDatabase {
         );
     }
 
-    public int createLogStatus(String fileName, String tempSaveSuccess) {
+    public int createLogStatus(String fileName, String storedDir, String tempSaveSuccess) {
         return controlJdbi.withHandle(handle ->
-                handle.createUpdate("INSERT INTO control.logs (data_file_config_id, file_name, status) VALUES (:dfci, :fileName, :status)")
+                handle.createUpdate("INSERT INTO control.logs (data_file_config_id, stored_dir, file_name, status) VALUES (:dfci, :storedDir, :fileName, :status)")
                         .bind("dfci", 2)
+                        .bind("storedDir", storedDir)
                         .bind("fileName", fileName)
                         .bind("status", tempSaveSuccess)
                         .execute()
@@ -121,8 +121,8 @@ public class JdbiDatabase {
 
     public int callDataCleaningProcedure() {
         try {
-            return this.controlJdbi.withHandle((handle) ->
-                    handle.createUpdate("CALL data_cleaning()")
+            return this.stagingJdbi.withHandle((handle) ->
+                    handle.createUpdate("CALL staging.data_cleaning()")
                             .execute()
             );
         } catch (Exception e) {
@@ -130,5 +130,16 @@ public class JdbiDatabase {
             e.printStackTrace();
             return -1; // Hoặc một mã lỗi tùy ý
         }
+    }
+
+    public String getStoredDir(String fileName, String status) {
+        return this.controlJdbi.withHandle((handle) ->
+                handle.createQuery("SELECT stored_dir FROM control.logs WHERE file_name = :fileName AND status = :status")
+                        .bind("fileName", fileName)
+                        .bind("status", status)
+                        .mapTo(String.class)
+                        .findOne()
+                        .orElse(null)
+        );
     }
 }

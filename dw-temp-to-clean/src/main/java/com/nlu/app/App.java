@@ -41,7 +41,8 @@ public class App {
         // 3. Clean thành công thì ghi log chờ lưu vào dim trong DW.
         System.out.println("Preprocessing data from cp_daily to data_cleaning success.");
         FileStatus fileStatus = ds.getFileStatus(today, StatusType.PENDING_TO_CLEAN_DATA);
-        boolean logSuccess = ds.createLogStatus(fileStatus.getFileName(), StatusType.PENDING_TO_SAVE_DW);
+        String storedDir = ds.getStoredDirFromStatus(fileStatus.getFileName(), StatusType.PENDING_TO_SAVE_TEMP);
+        boolean logSuccess = ds.createLogStatus(fileStatus.getFileName(), storedDir, StatusType.PENDING_TO_SAVE_DW);
         if (!logSuccess) {
             System.out.println("Create log status failed! Program exited.");
         } else {
