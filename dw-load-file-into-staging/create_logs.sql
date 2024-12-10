@@ -10,6 +10,7 @@ CREATE TABLE logs (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     created_by VARCHAR(50) NOT NULL
 );
+-- FAKE DỮ LIỆU
 -- Dòng dữ liệu 1: Ghi nhận hoàn thành việc thu thập dữ liệu
 INSERT INTO logs (df_config_id, name, row_count, status, note, created_by)
 VALUES (1, 'cp_daily_13.11.2024.csv', 168, 'SUCCESS_LOAD_INTO_STAGING', 'Data crawling completed successfully.', 'admin');
