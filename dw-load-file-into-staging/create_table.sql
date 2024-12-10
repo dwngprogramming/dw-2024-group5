@@ -98,36 +98,3 @@ INSERT INTO data_file_configs (
     CURRENT_TIMESTAMP,
     'admin'
 );
-
--- Insert an entry into data_file with the initial configuration for loading status
--- INSERT INTO data_file (
---     df_config_id,
---     name,
---     row_count,
---     status,
---     note,
---     created_at,
---     created_by
--- ) VALUES (
---     LAST_INSERT_ID(), -- Assumes the last inserted data_file_configs entry is relevant
---     'cp_daily_28.10.2024.csv',
---     0,  -- Initial row count (updated after loading)
---     'PENDING',  -- Initial status
---     'Pending load into cp_daily table',
---     CURRENT_TIMESTAMP,
---     'admin'
--- );
--- Create table to store details for each data file loaded
--- CREATE TABLE IF NOT EXISTS data_file (
---     id BIGINT AUTO_INCREMENT PRIMARY KEY,
---     df_config_id BIGINT NOT NULL,           -- Foreign key to reference data_file_configs
---     name VARCHAR(1000),                     -- File name
---     row_count INT,                          -- Number of rows in the file
---     status VARCHAR(1000),                   -- Status of the file load (e.g., "SUCCESS", "FAILED")
---     note TEXT,                              -- Any additional notes or error messages
---     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- Creation timestamp
---     updated_at TIMESTAMP NULL,                          -- Update timestamp
---     created_by VARCHAR(255),                              -- User who created the entry
---     updated_by VARCHAR(255),                              -- User who last updated the entry
---     FOREIGN KEY (df_config_id) REFERENCES data_file_configs(id) -- Link to data_file_configs table
--- );
