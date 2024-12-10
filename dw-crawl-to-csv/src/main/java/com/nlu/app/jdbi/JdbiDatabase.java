@@ -1,113 +1,120 @@
 package com.nlu.app.jdbi;
 
-import com.nlu.app.dto.Log;
 import com.nlu.app.dto.DataFileConfig;
+import com.nlu.app.dto.Log;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import java.time.LocalDate;
+import java.util.ResourceBundle;
 import org.jdbi.v3.core.Jdbi;
 import org.jdbi.v3.core.mapper.reflect.ConstructorMapper;
 
-import java.time.LocalDate;
-import java.util.ResourceBundle;
-
 public class JdbiDatabase {
-    private final ResourceBundle bundle = ResourceBundle.getBundle("config");
-    private final String username;
-    private final String password;
-    private Jdbi controlJdbi;
-    private Jdbi stagingJdbi;
 
-    public JdbiDatabase() {
-        this.username = this.bundle.getString("database.username");
-        this.password = this.bundle.getString("database.password");
-        this.controlJdbi = this.getControl();
-        this.stagingJdbi = this.getStaging();
+  private final ResourceBundle bundle = ResourceBundle.getBundle("config");
+  private final String username;
+  private final String password;
+  private Jdbi controlJdbi;
+  private Jdbi stagingJdbi;
+
+  public JdbiDatabase() {
+    // 2.1 Lấy các thông tin cấu hình db từ config.properties
+    this.username = this.bundle.getString("database.username");
+    this.password = this.bundle.getString("database.password");
+    // 2.2 Kết nối tới db control, db staging
+    this.controlJdbi = this.getControl();
+    this.stagingJdbi = this.getStaging();
+  }
+
+  // Hàm lấy id của file log, trả về id nếu đã crawl, -1 nếu chưa crawl
+  public int getFileCrawlToday(LocalDate date) {
+    return controlJdbi.withHandle(handle ->
+        handle.createQuery("SELECT id FROM control.logs WHERE DATE(date_record) = :date")
+            .bind("date", date)
+            .mapTo(Integer.class)
+            .findOne()
+            .orElse(-1) // Trả về kết quả của orElse
+    );
+  }
+
+  // Hàm lấy ra thông tin về file config trong bảng data_file_configs
+  public DataFileConfig getDataFileConfig(String code) {
+    return controlJdbi.withHandle(handle ->
+        handle
+            .registerRowMapper(ConstructorMapper.factory(DataFileConfig.class))
+            .createQuery("SELECT * FROM control.data_file_configs WHERE code = :code")
+            .bind("code", code)
+            .mapTo(DataFileConfig.class)
+            .findOne()
+            .orElse(null)
+    );
+  }
+
+  // Ghi lại log vào table data_files. Trả về id của log vừa lưu
+  public int logCrawlFile(Log log) {
+    return controlJdbi.withHandle(handle ->
+        handle.createUpdate(
+                "INSERT INTO control.logs (data_file_config_id, file_name, stored_dir, num_of_file_row, date_record, status) "
+                    +
+                    "VALUES (:dataFileConfigId, :fileName, :storedDir, :numOfFileRow, :dateRecord, :status)")
+            .bindBean(log)  // bind toàn bộ đối tượng DataFile
+            .executeAndReturnGeneratedKeys("id")  // Trả về id mới được tạo
+            .mapTo(int.class)  // ánh xạ kết quả thành kiểu int
+            .one()  // lấy giá trị duy nhất
+    );
+  }
+
+  // Hàm lấy ra thông tin về log dựa trên id log (record trong table data_files)
+  public Log getDataFileById(int dataFileId) {
+    return controlJdbi.withHandle(handle ->
+        handle
+            .registerRowMapper(Log.class, ConstructorMapper.of(Log.class))
+            .createQuery("SELECT * FROM control.logs WHERE id = :dataFileId")
+            .bind("dataFileId", dataFileId)
+            .mapTo(Log.class)
+            .findOne()
+            .orElse(null)
+    );
+  }
+
+  public void saveOneRowToCpDaily(String[] values) {
+    stagingJdbi.useHandle((handle) -> {
+      handle.execute(
+          "INSERT INTO staging.cp_daily (product_name, image_url, size, weight, resolution, sensor, buttons, connection, battery, compatibility, utility, manufacturer, price) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+          new Object[]{values[0], values[1], values[2], values[3], values[4], values[5], values[6],
+              values[7], values[8], values[9], values[10], values[11], values[12]});
+    });
+  }
+
+  // Hàm lấy kết nối JDBI tới CSDL Control
+  private Jdbi getControl() {
+    if (this.controlJdbi == null) {
+      String url = this.bundle.getString("database.control");
+      HikariDataSource dataSource = this.setupHikariDataSource(url);
+      this.controlJdbi = Jdbi.create(dataSource);
     }
 
-    // Hàm lấy id của file log, trả về id nếu đã crawl, -1 nếu chưa crawl
-    public int getFileCrawlToday(LocalDate date) {
-        return controlJdbi.withHandle(handle ->
-                handle.createQuery("SELECT id FROM control.logs WHERE DATE(date_record) = :date")
-                        .bind("date", date)
-                        .mapTo(Integer.class)
-                        .findOne()
-                        .orElse(-1) // Trả về kết quả của orElse
-        );
+    return this.controlJdbi;
+  }
+
+  // Hàm lấy kết nối JDBI tới CSDL Staging
+  private Jdbi getStaging() {
+    if (this.stagingJdbi == null) {
+      String url = this.bundle.getString("database.staging");
+      HikariDataSource dataSource = this.setupHikariDataSource(url);
+      this.stagingJdbi = Jdbi.create(dataSource);
     }
 
-    // Hàm lấy ra thông tin về file config trong bảng data_file_configs
-    public DataFileConfig getDataFileConfig(String code) {
-        return controlJdbi.withHandle(handle ->
-                handle
-                        .registerRowMapper(ConstructorMapper.factory(DataFileConfig.class))
-                        .createQuery("SELECT * FROM control.data_file_configs WHERE code = :code")
-                        .bind("code", code)
-                        .mapTo(DataFileConfig.class)
-                        .findOne()
-                        .orElse(null)
-        );
-    }
+    return this.stagingJdbi;
+  }
 
-    // Ghi lại log vào table data_files. Trả về id của log vừa lưu
-    public int logCrawlFile(Log log) {
-        return controlJdbi.withHandle(handle ->
-                handle.createUpdate("INSERT INTO control.logs (data_file_config_id, file_name, stored_dir, num_of_file_row, date_record, status) " +
-                                "VALUES (:dataFileConfigId, :fileName, :storedDir, :numOfFileRow, :dateRecord, :status)")
-                        .bindBean(log)  // bind toàn bộ đối tượng DataFile
-                        .executeAndReturnGeneratedKeys("id")  // Trả về id mới được tạo
-                        .mapTo(int.class)  // ánh xạ kết quả thành kiểu int
-                        .one()  // lấy giá trị duy nhất
-        );
-    }
-
-    // Hàm lấy ra thông tin về log dựa trên id log (record trong table data_files)
-    public Log getDataFileById(int dataFileId) {
-        return controlJdbi.withHandle(handle ->
-                handle
-                        .registerRowMapper(Log.class, ConstructorMapper.of(Log.class))
-                        .createQuery("SELECT * FROM control.logs WHERE id = :dataFileId")
-                        .bind("dataFileId", dataFileId)
-                        .mapTo(Log.class)
-                        .findOne()
-                        .orElse(null)
-        );
-    }
-
-    public void saveOneRowToCpDaily(String[] values) {
-        stagingJdbi.useHandle((handle) -> {
-            handle.execute("INSERT INTO staging.cp_daily (product_name, image_url, size, weight, resolution, sensor, buttons, connection, battery, compatibility, utility, manufacturer, price) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", new Object[]{values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7], values[8], values[9], values[10], values[11], values[12]});
-        });
-    }
-
-    // Hàm lấy kết nối JDBI tới CSDL Control
-    private Jdbi getControl() {
-        if (this.controlJdbi == null) {
-            String url = this.bundle.getString("database.control");
-            HikariDataSource dataSource = this.setupHikariDataSource(url);
-            this.controlJdbi = Jdbi.create(dataSource);
-        }
-
-        return this.controlJdbi;
-    }
-
-    // Hàm lấy kết nối JDBI tới CSDL Staging
-    private Jdbi getStaging() {
-        if (this.stagingJdbi == null) {
-            String url = this.bundle.getString("database.staging");
-            HikariDataSource dataSource = this.setupHikariDataSource(url);
-            this.stagingJdbi = Jdbi.create(dataSource);
-        }
-
-        return this.stagingJdbi;
-    }
-
-    // Hàm tạo kết nối JDBI tới CSDL
-    private HikariDataSource setupHikariDataSource(String databaseUrl) {
-        HikariConfig config = new HikariConfig();
-        config.setJdbcUrl(databaseUrl);
-        config.setUsername(this.username);
-        config.setPassword(this.password);
-        config.setMaximumPoolSize(10);
-        return new HikariDataSource(config);
-    }
+  // Hàm tạo kết nối JDBI tới CSDL
+  private HikariDataSource setupHikariDataSource(String databaseUrl) {
+    HikariConfig config = new HikariConfig();
+    config.setJdbcUrl(databaseUrl);
+    config.setUsername(this.username);
+    config.setPassword(this.password);
+    config.setMaximumPoolSize(10);
+    return new HikariDataSource(config);
+  }
 }
