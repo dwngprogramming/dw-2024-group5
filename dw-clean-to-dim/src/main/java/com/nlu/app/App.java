@@ -12,20 +12,20 @@ public class App {
         // Ngày hiện tại
         LocalDate today = LocalDate.now();
 
-        // Mockup service
+        // Mockup service. Bước 2 và 3 nằm ở trong đây
         DatabaseService ds = new DatabaseService();
 
-        // 1. Kiểm tra trạng thái của file trong log
-        // 1.1. Tìm trạng thái hiện tại của file trong hôm nay (thực thi trong hàm current state).
+        // 4. Kiểm tra trạng thái cao nhất hiện tại trong control.logs của file csv
         Optional<Integer> optionalCurrentState = ds.currentState(today);
         int currentState = optionalCurrentState.orElse(0);
 
-        // 1.2. Kiểm tra các trạng thái không hợp lệ cho bước này
         if (currentState < 3) {
+            // 4.1. Thông báo chưa crawl/chưa lưu vào staging.cp_daily
             System.out.println("Need to crawl file or Save to staging.cp_daily or Clean data first! Program exited.");
             return;
         }
         if (currentState > 3) {
+            // 4.2. Thông báo đã đưa dữ liệu vào dw trong hôm nay rồi
             System.out.println("Data has been saved to database dw already! Program exited.");
             return;
         }

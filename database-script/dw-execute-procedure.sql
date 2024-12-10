@@ -29,13 +29,13 @@ BEGIN
     DECLARE existing_product_name VARCHAR(500);
 
     -- Khai báo con trỏ cho vòng lặp đầu tiên (dữ liệu mới từ staging)
-    DECLARE cur CURSOR FOR 
-        SELECT product_name, image_url, size, weight, resolution, sensor, buttons, 
-               `connection`, battery, compatibility, utility, manufacturer, price 
+    DECLARE cur CURSOR FOR
+        SELECT product_name, image_url, size, weight, resolution, sensor, buttons,
+               `connection`, battery, compatibility, utility, manufacturer, price
         FROM staging.data_cleaning;
 
     -- Khai báo con trỏ cho vòng lặp thứ hai (kiểm tra dữ liệu cũ)
-    DECLARE check_cur CURSOR FOR 
+    DECLARE check_cur CURSOR FOR
         SELECT product_name FROM dw.mouses_dim;
 
     -- Khai báo handler chung cho cả hai vòng lặp
@@ -47,58 +47,59 @@ BEGIN
     -- Vòng lặp đầu tiên: chuyển dữ liệu từ staging
     read_loop: LOOP
         -- Lấy từng dòng dữ liệu từ staging
-        FETCH cur INTO transform_product_name, transform_image_url, transform_size, transform_weight, 
-                     transform_resolution, transform_sensor, transform_buttons, transform_connection_text, 
-                     transform_battery, transform_compatibility_text, transform_utility, transform_manufacturer, transform_price;
+        FETCH cur INTO transform_product_name, transform_image_url, transform_size, transform_weight,
+            transform_resolution, transform_sensor, transform_buttons, transform_connection_text,
+            transform_battery, transform_compatibility_text, transform_utility, transform_manufacturer, transform_price;
 
         IF done_loop1 THEN
             LEAVE read_loop;
         END IF;
 
-        -- 1. Lấy ra transform_brand_id từ brand_dim và transform_today_date_id từ date_dim (Date của hôm nay)
+        -- Lấy ra transform_brand_id từ brand_dim và transform_today_date_id từ date_dim (Date của hôm nay)
         SELECT id INTO transform_brand_id FROM dw.brand_dim WHERE `name` = transform_manufacturer;
         SELECT id INTO transform_today_date_id FROM dw.date_dim WHERE date = CURRENT_DATE;
 
-        -- 2. Kiểm tra xem sản phẩm đã tồn tại trong mouses_dim chưa
-        SELECT COUNT(*) INTO record_count 
-        FROM dw.mouses_dim 
+        -- 6. Đối chiếu dữ liệu của staging.data_cleaning với dw.mouses_temp
+        SELECT COUNT(*) INTO record_count
+        FROM dw.mouses_dim
         WHERE product_name = transform_product_name;
 
-        IF record_count = 0 THEN  -- Nếu chưa tồn tại, tiến hành INSERT
-            INSERT INTO dw.mouses_dim (brand_id, date_id, product_name, image_url, size, weight, resolution, sensor, buttons, 
+        IF record_count = 0 THEN  -- Nếu chưa tồn tại, tiến hành INSERT (Data trùng tên sản phẩm = no)
+        -- 6.1. Thêm mới
+            INSERT INTO dw.mouses_dim (brand_id, date_id, product_name, image_url, size, weight, resolution, sensor, buttons,
                                        battery, utility, price, non_updated_count, is_expired)
-            VALUES (transform_brand_id, transform_today_date_id, transform_product_name, transform_image_url, transform_size, 
-                    transform_weight, transform_resolution, transform_sensor, transform_buttons, 
+            VALUES (transform_brand_id, transform_today_date_id, transform_product_name, transform_image_url, transform_size,
+                    transform_weight, transform_resolution, transform_sensor, transform_buttons,
                     transform_battery, transform_utility, transform_price, 0, FALSE);
 
             SET transform_mouse_id = LAST_INSERT_ID();
 
-            -- 3. Process transform_connection_text và insert vào mouse_connection_dim
+            -- Process transform_connection_text và insert vào mouse_connection_dim
             IF transform_connection_text IS NOT NULL THEN
                 WHILE LENGTH(transform_connection_text) > 0 DO
-                    SET single_value = TRIM(SUBSTRING_INDEX(transform_connection_text, ',', 1));
-                    SET transform_connection_text = TRIM(LEADING ',' FROM SUBSTRING(transform_connection_text, LENGTH(single_value) + 2));
-                    
-                    -- Thêm vào bảng trung gian mouse_connection_dim
-                    INSERT INTO dw.mouse_connection_dim (mouse_id, connection_id)
-                    SELECT transform_mouse_id, conn.id 
-                    FROM dw.connection_dim conn 
-                    WHERE conn.`name` = single_value;
-                END WHILE;
+                        SET single_value = TRIM(SUBSTRING_INDEX(transform_connection_text, ',', 1));
+                        SET transform_connection_text = TRIM(LEADING ',' FROM SUBSTRING(transform_connection_text, LENGTH(single_value) + 2));
+
+                        -- Thêm vào bảng trung gian mouse_connection_dim
+                        INSERT INTO dw.mouse_connection_dim (mouse_id, connection_id)
+                        SELECT transform_mouse_id, conn.id
+                        FROM dw.connection_dim conn
+                        WHERE conn.`name` = single_value;
+                    END WHILE;
             END IF;
 
-            -- 4. Process transform_compatibility_text và insert vào mouse_compatibility_dim
+            -- Process transform_compatibility_text và insert vào mouse_compatibility_dim
             IF transform_compatibility_text IS NOT NULL THEN
                 WHILE LENGTH(transform_compatibility_text) > 0 DO
-                    SET single_value = TRIM(SUBSTRING_INDEX(transform_compatibility_text, ',', 1));
-                    SET transform_compatibility_text = TRIM(LEADING ',' FROM SUBSTRING(transform_compatibility_text, LENGTH(single_value) + 2));
-                    
-                    -- Thêm vào bảng trung gian mouse_compatibility_dim
-                    INSERT INTO dw.mouse_compatibility_dim (mouse_id, compatibility_id)
-                    SELECT transform_mouse_id, comp.id 
-                    FROM dw.compatibility_dim comp
-                    WHERE comp.`name` = single_value;
-                END WHILE;
+                        SET single_value = TRIM(SUBSTRING_INDEX(transform_compatibility_text, ',', 1));
+                        SET transform_compatibility_text = TRIM(LEADING ',' FROM SUBSTRING(transform_compatibility_text, LENGTH(single_value) + 2));
+
+                        -- Thêm vào bảng trung gian mouse_compatibility_dim
+                        INSERT INTO dw.mouse_compatibility_dim (mouse_id, compatibility_id)
+                        SELECT transform_mouse_id, comp.id
+                        FROM dw.compatibility_dim comp
+                        WHERE comp.`name` = single_value;
+                    END WHILE;
             END IF;
         END IF;  -- Kết thúc kiểm tra tồn tại
     END LOOP;
@@ -118,18 +119,54 @@ BEGIN
             LEAVE check_loop;
         END IF;
 
-        -- Kiểm tra sản phẩm có tồn tại trong staging hay không
+        -- 6.3. Cập nhật sự thay đổi và cập nhật date_dim_id của hôm nay
+        IF EXISTS (
+            SELECT 1
+            FROM dw.mouses_dim md
+                     JOIN staging.data_cleaning sd
+                          ON md.product_name = sd.product_name
+            WHERE md.product_name = existing_product_name
+              AND (
+                md.image_url != transform_image_url OR
+                md.size != transform_size OR
+                md.weight != transform_weight OR
+                md.resolution != transform_resolution OR
+                md.sensor != transform_sensor OR
+                md.buttons != transform_buttons OR
+                md.battery != transform_battery OR
+                md.utility != transform_utility OR
+                md.price != transform_price
+                )
+        ) THEN
+            -- Cập nhật dữ liệu nếu có sự thay đổi
+            UPDATE dw.mouses_dim
+            SET image_url = (SELECT image_url FROM staging.data_cleaning WHERE product_name = existing_product_name LIMIT 1),
+                size = (SELECT size FROM staging.data_cleaning WHERE product_name = existing_product_name LIMIT 1),
+                weight = (SELECT weight FROM staging.data_cleaning WHERE product_name = existing_product_name LIMIT 1),
+                resolution = (SELECT resolution FROM staging.data_cleaning WHERE product_name = existing_product_name LIMIT 1),
+                sensor = (SELECT sensor FROM staging.data_cleaning WHERE product_name = existing_product_name LIMIT 1),
+                buttons = (SELECT buttons FROM staging.data_cleaning WHERE product_name = existing_product_name LIMIT 1),
+                battery = (SELECT battery FROM staging.data_cleaning WHERE product_name = existing_product_name LIMIT 1),
+                utility = (SELECT utility FROM staging.data_cleaning WHERE product_name = existing_product_name LIMIT 1),
+                price = (SELECT price FROM staging.data_cleaning WHERE product_name = existing_product_name LIMIT 1),
+                date_id = transform_today_date_id,
+                non_updated_count = 0,
+                is_expired = FALSE
+            WHERE product_name = existing_product_name;
+        END IF;
+
+        -- 7. Cập nhật non_update_count cho các cột không có sự thay đổi
         IF NOT EXISTS (
-            SELECT 1 FROM staging.data_cleaning 
+            SELECT 1 FROM staging.data_cleaning
             WHERE product_name = existing_product_name
         ) THEN
             -- Tăng non_updated_count hoặc đặt is_expired nếu >= 5
             UPDATE dw.mouses_dim
             SET non_updated_count = non_updated_count + 1,
-                is_expired = CASE 
-                                WHEN non_updated_count + 1 >= 5 THEN TRUE 
-                                ELSE FALSE 
-                             END
+                is_expired = CASE
+                                 WHEN non_updated_count + 1 >= 5 THEN TRUE
+                                 ELSE FALSE
+                    END
             WHERE product_name = existing_product_name;
         END IF;
     END LOOP;

@@ -19,8 +19,10 @@ public class JdbiDatabase {
     private Jdbi stagingJdbi;
 
     public JdbiDatabase() {
+        // 2. Lấy thông tin từ config.properties
         this.username = this.bundle.getString("database.username");
         this.password = this.bundle.getString("database.password");
+        // 3. Kết nối tới database control
         this.controlJdbi = this.getControl();
         this.stagingJdbi = this.getStaging();
     }
