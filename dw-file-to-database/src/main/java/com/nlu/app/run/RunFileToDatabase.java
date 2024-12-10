@@ -33,21 +33,33 @@ public class RunFileToDatabase {
             return;
         }
 
-        if (!currentFileStatus.getStatus().equals(StatusType.PENDING_TO_SAVE_TEMP)) {
-            System.out.println("Current status now is not matched with PENDING_TO_SAVE_TEMP. Program exited.");
+        if (!currentFileStatus.getStatus().equals(StatusType.PENDING_TO_LOAD_INTO_STAGING)) {
+            System.out.println("Current status now is not matched with PENDING_TO_LOAD_INTO_STAGING. Program exited.");
             return;
         }
 
-        // 3. Đã lấy ra status cao nhất, nên nếu equal => Có thể thực hiện save to temp ngay
+        // 3. Đã lấy ra status cao nhất, nên nếu equal => Có thể thực hiện save to temp ngay, ghi log RUNNING_LOAD_CP_DAILY
         String fileName = currentFileStatus.getFileName();
+        boolean runningSuccess = databaseService.createLogStatus(fileName, StatusType.RUNNING_LOAD_CP_DAILY);
+        if (!runningSuccess) {
+            System.out.println("Error in RUNNING_LOAD_CP_DAILY. Exiting...");
+            return;
+        }
 
-        // 3. Nếu thành công, lấy ra file CSV và thực hiện chuyển đổi dữ liệu từ file CSV sang bản staging.cp_daily
+        // 4. Nếu thành công, lấy ra file CSV và thực hiện chuyển đổi dữ liệu từ file CSV sang bản staging.cp_daily
+        // 4.1. Ghi log CONFIG_RETRIEVED sau khi lấy được cấu hình của file
         String csvPath = databaseService.getFileStoredDir(fileName);
         if (csvPath == null) {
             System.out.println("File not found! Exiting...");
             return;
         }
-        // Mảng với index 0 là tổng số row trong CSV, index 1 là số row insert thành công vào database
+        boolean configSuccess = databaseService.createLogStatus(fileName, StatusType.CONFIG_RETRIEVED);
+        if (!configSuccess) {
+            System.out.println("Error in CONFIG_RETRIEVED. Exiting...");
+            return;
+        }
+
+        // 4.2. Mảng với index 0 là tổng số row trong CSV, index 1 là số row insert thành công vào database
         int[] rowsInfo = csvService.csvDataToTempDatabase(csvPath);
         int rowsTotal = rowsInfo[0];
         int rowsInserted = rowsInfo[1];
@@ -58,13 +70,14 @@ public class RunFileToDatabase {
         System.out.println("Total rows: " + rowsTotal);
         System.out.println("Inserted rows: " + rowsInserted);
 
-        // 4. Sau khi Insert thành công, thêm log vào bảng staging.logs
-        boolean logSuccess = databaseService.createLogStatus(fileName, StatusType.PENDING_TO_CLEAN_DATA);
+        // 5. Sau khi Insert thành công, thêm log vào bảng staging.logs
+        boolean logSuccess = databaseService.createLogStatus(fileName, StatusType.SUCCESS_LOAD_INTO_STAGING);
         if (logSuccess) {
             System.out.println("Log status changed to PENDING_TO_CLEAN_DATA");
             System.out.println("Exiting...");
         } else {
             System.out.println("Failed to change log status. Exiting...");
+            databaseService.createLogStatus(fileName, StatusType.ERROR);
         }
     }
 }

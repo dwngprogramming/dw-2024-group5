@@ -15,7 +15,7 @@ public class ExecutingJobSchedule {
 
     public static void main( String[] args ) {
         // 1. Định nghĩa các file JAR cần gọi tuần tự
-        List<String> jarFiles = Arrays.asList(
+        List<String> executeFiles = Arrays.asList(
                 "dw-crawl-to-csv-1.1.jar",
                 "dw-file-to-database-1.1.jar",
                 "dw-temp-to-clean-1.1.jar",
@@ -42,25 +42,33 @@ public class ExecutingJobSchedule {
         System.out.println("Logging to: " + logFile.getAbsolutePath());
 
         // 3. Chạy tuần tự các file .jar
-        for (String jar : jarFiles) {
-            System.out.println("Running: " + jar);
-            boolean success = runJar(jarFolderPath + jar, jar, logFile);
+        for (String file : executeFiles) {
+            System.out.println("Running: " + file);
+            boolean success = runExecuteFile(jarFolderPath + file, file, logFile);
             if (!success) {
-                System.out.println("Error running " + jar);
+                System.out.println("Error running " + file);
                 break;
             }
         }
     }
 
-    private static boolean runJar(String jarPath, String jarName, File logFile) {
-        ProcessBuilder processBuilder = new ProcessBuilder("java", "-jar", jarPath);
+    private static boolean runExecuteFile(String executePath, String executeName, File logFile) {
+        // Kiểm tra file hiện tại là .py hay .jar
+        boolean isPythonScript = executeName.endsWith(".py");
+
+        ProcessBuilder processBuilder;
+        if (isPythonScript) {
+            processBuilder = new ProcessBuilder("python", executePath);
+        } else {
+            processBuilder = new ProcessBuilder("java", "-jar", executePath);
+        }
         processBuilder.redirectErrorStream(true); // Gộp stderr vào stdout
 
         try (var logWriter = new PrintWriter(new BufferedWriter(new FileWriter(logFile, true)))) {
-            logWriter.println("[" + getTimestamp() + "] Starting JAR: " + jarName);
+            logWriter.println("[" + getTimestamp() + "] Starting JAR: " + executeName);
             logWriter.flush();
 
-            String startLog = String.format("[%s] Starting JAR: %s%n", getTimestamp(), jarName);
+            String startLog = String.format("[%s] Starting JAR: %s%n", getTimestamp(), executeName);
             logWriter.write(startLog);
             System.out.println(startLog);
 
@@ -78,7 +86,7 @@ public class ExecutingJobSchedule {
 
             // Chờ quá trình kết thúc
             int exitCode = process.waitFor();
-            logWriter.println("[" + getTimestamp() + "] Finished JAR: " + jarName + " with exit code " + exitCode);
+            logWriter.println("[" + getTimestamp() + "] Finished JAR: " + executeName + " with exit code " + exitCode);
             return exitCode == 0;
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();

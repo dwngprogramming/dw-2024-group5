@@ -41,7 +41,7 @@ public class App {
         // 3. Transform thành công thì ghi log chờ lưu vào dim trong DW.
         System.out.println("Transform data from data_cleaning to dim table success.");
         FileStatus fileStatus = ds.getFileStatus(today, StatusType.PENDING_TO_SAVE_DW);
-        String storedDir = ds.getStoredDirFromStatus(fileStatus.getFileName(), StatusType.PENDING_TO_SAVE_TEMP);
+        String storedDir = ds.getStoredDirFromStatus(fileStatus.getFileName(), StatusType.PENDING_TO_LOAD_INTO_STAGING);
         boolean logSuccess = ds.createLogStatus(fileStatus.getFileName(), storedDir, StatusType.PENDING_TO_SAVE_DATA_MART);
         if (!logSuccess) {
             System.out.println("Create log status failed! Program exited.");

@@ -103,7 +103,7 @@ public class JdbiDatabase {
                 handle.createQuery("SELECT stored_dir FROM control.logs " +
                                 "WHERE file_name =:fileName AND status = :status")
                         .bind("fileName", fileName)
-                        .bind("status", StatusType.PENDING_TO_SAVE_TEMP)
+                        .bind("status", StatusType.PENDING_TO_LOAD_INTO_STAGING)
                         .mapTo(String.class)
                         .findOne()
                         .orElse(null)

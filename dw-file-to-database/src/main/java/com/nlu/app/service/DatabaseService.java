@@ -18,8 +18,8 @@ public class DatabaseService {
     public final JdbiDatabase jdbiDatabase = new JdbiDatabase();
     public final ResourceBundle bundle = ResourceBundle.getBundle("config");
     public final Map<Integer, String> statusMap = Map.of(
-            1, StatusType.PENDING_TO_SAVE_TEMP,
-            2, StatusType.PENDING_TO_CLEAN_DATA,
+            1, StatusType.PENDING_TO_LOAD_INTO_STAGING,
+            2, StatusType.SUCCESS_LOAD_INTO_STAGING,
             3, StatusType.PENDING_TO_SAVE_DW,
             4, StatusType.PENDING_TO_SAVE_DATA_MART); // <code, dataFileConfig>
 
@@ -57,7 +57,7 @@ public class DatabaseService {
     }
 
     public boolean isSavedToTemp(String fileName) {
-        return !jdbiDatabase.getLogStatusByFileName(fileName).equals(StatusType.PENDING_TO_SAVE_TEMP);
+        return !jdbiDatabase.getLogStatusByFileName(fileName).equals(StatusType.PENDING_TO_LOAD_INTO_STAGING);
     }
 
     public void deleteAllRowsFromCpDaily() {
