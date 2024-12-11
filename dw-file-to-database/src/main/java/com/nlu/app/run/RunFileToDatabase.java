@@ -33,8 +33,8 @@ public class RunFileToDatabase {
             return;
         }
 
-        if (!currentFileStatus.getStatus().equals(StatusType.PENDING_TO_LOAD_INTO_STAGING)) {
-            System.out.println("Current status now is not matched with PENDING_TO_LOAD_INTO_STAGING. Program exited.");
+        if (!currentFileStatus.getStatus().equals(StatusType.PENDING_TO_SAVE_TEMP)) {
+            System.out.println("Current status now is not matched with PENDING_TO_SAVE_TEMP. Program exited.");
             return;
         }
 
@@ -71,7 +71,7 @@ public class RunFileToDatabase {
         System.out.println("Inserted rows: " + rowsInserted);
 
         // 5. Sau khi Insert thành công, thêm log vào bảng staging.logs
-        boolean logSuccess = databaseService.createLogStatus(fileName, StatusType.SUCCESS_LOAD_INTO_STAGING);
+        boolean logSuccess = databaseService.createLogStatus(fileName, StatusType.PENDING_TO_CLEAN_DATA);
         if (logSuccess) {
             System.out.println("Log status changed to PENDING_TO_CLEAN_DATA");
             System.out.println("Exiting...");
